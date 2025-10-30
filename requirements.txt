@@ -1,0 +1,8 @@
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+PyMySQL
+PyPDF2
+scikit-learn
+pandas
+numpy
