@@ -1,8 +1,7 @@
 Flask
-Flask-SQLAlchemy
-Flask-Migrate
+gunicorn
 PyMySQL
-PyPDF2
+SQLAlchemy
+Flask-Migrate
 scikit-learn
-pandas
-numpy
+PyPDF2
