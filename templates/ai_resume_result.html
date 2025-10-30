@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Resume Screening Result</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #C3EBFF;
+      padding: 30px;
+      color: #212396;
+      position: relative; /* Needed for absolute positioning of button */
+      min-height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      padding-bottom: 60px; /* space for button */
+    }
+
+    .box {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 320px;
+      max-width: 600px;
+    }
+
+    mark {
+      background-color: #FFD54F;
+      color: black;
+      padding: 0.1rem 0.2rem;
+      border-radius: 0.2rem;
+    }
+
+    .highlight-box {
+      background: #B2D3FD;
+      border-radius: 10px;
+      padding: 15px;
+      height: 500px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 14px;
+      border: 1px solid #e2e8f0;
+    }
+
+    .highlight-box p {
+      margin: 8px 0;
+    }
+
+    .back-btn {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #08106E;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: background 0.3s;
+      position: absolute;
+      bottom: 80px;
+      left: 30px;
+    }
+
+    .back-btn:hover {
+      background: #04104a;
+    }
+
+    h1 {
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    .highlight-box ul {
+      padding-left: 20px;
+      margin: 5px 0;
+    }
+
+    .highlight-box li {
+      margin: 3px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="box">
+      <h1>🧠 AI Resume Screening Result</h1>
+      <h2>🔍 Contact Info</h2>
+      <p>📧 <b>Email:</b> {{ email }}</p>
+      <p>📞 <b>Phone:</b> 
+        {% set phone_digits = phone|replace(' ', '')|replace('-', '')|replace('(', '')|replace(')', '') %}
+        {% if phone_digits|length == 10 %}
+          0{{ phone_digits }}
+        {% elif phone_digits|length == 11 %}
+          {{ phone_digits }}
+        {% else %}
+          {{ phone }} <!-- fallback if invalid length -->
+        {% endif %}
+      </p>
+      <h3>📊 Match Score: {{ "%.2f"|format(score) }}%</h3>
+      <p>✅ Skills matched: {{ matched_skills|length }}/{{ skills_count }}</p>
+      {% if matched_skills %}
+      <ul>
+        {% for skill in matched_skills %}
+          <li>{{ skill }}</li>
+        {% endfor %}
+      </ul>
+      {% else %}
+        <p>No skills matched.</p>
+      {% endif %}
+    </div>
+
+    <div class="box">
+      <h2>📜 Resume Preview</h2>
+      <div class="highlight-box">
+        {% set formatted_resume = highlighted_resume.replace('\n\n', '</p><p>').replace('\n', '<br>') %}
+        <p>{{ formatted_resume|safe }}</p>
+      </div>
+    </div>
+  </div>
+
+  <a href="{{ url_for('employer_dashboard') }}" class="back-btn">⬅ Back to Dashboard</a>
+
+</body>
+</html>
