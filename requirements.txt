@@ -5,3 +5,4 @@ SQLAlchemy
 Flask-Migrate
 scikit-learn
 PyPDF2
+spacy
