@@ -14,7 +14,8 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # ✅ DATABASE CONFIGURATION
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smarthire.db'
+# Local MySQL (adjust password as needed)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@localhost/smarthire'
 
 # Render deployment: use DATABASE_URL if available
 if os.environ.get("DATABASE_URL"):
@@ -43,10 +44,10 @@ class Applicant(db.Model):
     resume_text = db.Column(db.Text)
     matched_score = db.Column(db.Float)
 
-
 # ============================
 # 🌐 ROUTES
 # ============================
+
 @app.route('/')
 def home():
     jobs = Job.query.filter_by(status='Approved').all()
@@ -115,5 +116,5 @@ def apply():
 # 🚀 DEPLOYMENT ENTRY POINT
 # ============================
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # Render uses dynamic port
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
