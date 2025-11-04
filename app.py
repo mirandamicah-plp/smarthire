@@ -14,12 +14,18 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # ✅ DATABASE CONFIGURATION
+# Heroku uses the DATABASE_URL environment variable (set by JawsDB)
 # Local MySQL (adjust password as needed)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@localhost/smarthire'
 
-# Render deployment: use DATABASE_URL if available
+# 🚀 HEROKU DEPLOYMENT FIX:
+# Check if DATABASE_URL (for Heroku/JawsDB) exists and overwrite the local URI.
 if os.environ.get("DATABASE_URL"):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL").replace("postgres://", "postgresql://")
+    # JawsDB URL is already in the correct mysql+pymysql format if configured properly 
+    # using the database_url library in Python, but since we are using Flask-SQLAlchemy, 
+    # we can use the raw DATABASE_URL from Heroku and it will often be handled correctly.
+    # The postgres replacement logic is removed as we are using MySQL (JawsDB).
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -116,5 +122,6 @@ def apply():
 # 🚀 DEPLOYMENT ENTRY POINT
 # ============================
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
+    # Ensure app runs on the correct Heroku PORT, falling back to 5000 for local development.
+    port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
