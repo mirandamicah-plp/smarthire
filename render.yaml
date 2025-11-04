@@ -1,8 +1,13 @@
 services:
-  - type: web
-    name: smarthire
-    env: python
-    plan: free
-    # We are adding a semi-colon to chain the commands: install dependencies AND download the model
-    buildCommand: pip install -r requirements.txt; python -m spacy download en_core_web_sm
-    startCommand: gunicorn app:app
+- type: web
+  name: smarthire # Use your service name if it's different
+  env: python
+  # Match the Python version in your runtime.txt
+  # Set the build and start commands explicitly here.
+  buildCommand: pip install -r requirements.txt && python -m spacy download en_core_web_sm
+  startCommand: gunicorn app:app
+  # Ensure the disk is not created if it is not required for a stateless app
+  # disk:
+  #   name: spacy-cache
+  #   mountPath: /opt/render/project/src/.cache/
+  #   sizeGB: 1
