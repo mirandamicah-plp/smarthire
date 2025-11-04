@@ -4,5 +4,6 @@ gunicorn==20.1.0
 itsdangerous==2.1.2
 Jinja2==3.1.2
 click==8.1.7
-flask-sqlalchemy  # <-- The missing package from earlier
+flask-sqlalchemy
+Flask-Migrate
 spacy==3.7.2
