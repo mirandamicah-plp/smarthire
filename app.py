@@ -1,17 +1,22 @@
-import spacy
-# ... other imports
-
-# This line should now work after the model is downloaded in the build command
-nlp = spacy.load("en_core_web_sm")
+import os
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from datetime import datetime
 from PyPDF2 import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import spacy
-import os
+
+# ============================
+# 🧩 NLP MODEL LOADING (Fixed)
+# ============================
+try:
+    nlp = spacy.load("en_core_web_sm")
+except OSError:
+    from spacy.cli import download
+    download("en_core_web_sm")
+    nlp = spacy.load("en_core_web_sm")
 
 # ============================
 # 🔧 Flask App Configuration
@@ -20,9 +25,10 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # ✅ DATABASE CONFIGURATION
-# For local MySQL (use your own password)
+# Local MySQL (adjust password as needed)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@localhost/smarthire'
-# For Render deployment, use DATABASE_URL if provided
+
+# Render deployment: use DATABASE_URL if available
 if os.environ.get("DATABASE_URL"):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL").replace("postgres://", "postgresql://")
 
@@ -30,16 +36,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-
-# ============================
-# 🧩 NLP MODEL LOADING
-# ============================
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    from spacy.cli import download
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
 
 # ============================
 # 🧱 DATABASE MODELS
@@ -50,6 +46,7 @@ class Job(db.Model):
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='Pending')
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class Applicant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -67,6 +64,7 @@ def home():
     jobs = Job.query.filter_by(status='Approved').all()
     return render_template('home.html', jobs=jobs)
 
+
 # Employer: Submit job for approval
 @app.route('/employer', methods=['GET', 'POST'])
 def employer():
@@ -79,6 +77,7 @@ def employer():
         flash('Job submitted for admin approval!', 'success')
         return redirect(url_for('employer'))
     return render_template('employer.html')
+
 
 # Admin: Approve/Reject job posts
 @app.route('/admin', methods=['GET', 'POST'])
@@ -94,6 +93,7 @@ def admin():
             flash(f'Job {action}d successfully!', 'info')
         return redirect(url_for('admin'))
     return render_template('admin.html', jobs=jobs)
+
 
 # Applicant: Apply to job with PDF resume
 @app.route('/apply', methods=['GET', 'POST'])
@@ -124,6 +124,7 @@ def apply():
         flash(f'Application submitted! Match Score: {round(score, 2)}%', 'success')
         return redirect(url_for('apply'))
     return render_template('apply.html', jobs=jobs)
+
 
 # ============================
 # 🚀 DEPLOYMENT ENTRY POINT
