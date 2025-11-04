@@ -3,5 +3,6 @@ services:
     name: smarthire
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
+    # We are adding a semi-colon to chain the commands: install dependencies AND download the model
+    buildCommand: pip install -r requirements.txt; python -m spacy download en_core_web_sm
     startCommand: gunicorn app:app
