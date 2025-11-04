@@ -1,22 +1,11 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from PyPDF2 import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-import spacy
-
-# ============================
-# 🧩 NLP MODEL LOADING (Fixed)
-# ============================
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    from spacy.cli import download
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
 
 # ============================
 # 🔧 Flask App Configuration
@@ -25,8 +14,7 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # ✅ DATABASE CONFIGURATION
-# Local MySQL (adjust password as needed)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@localhost/smarthire'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///smarthire.db'
 
 # Render deployment: use DATABASE_URL if available
 if os.environ.get("DATABASE_URL"):
@@ -55,17 +43,16 @@ class Applicant(db.Model):
     resume_text = db.Column(db.Text)
     matched_score = db.Column(db.Float)
 
+
 # ============================
 # 🌐 ROUTES
 # ============================
-
 @app.route('/')
 def home():
     jobs = Job.query.filter_by(status='Approved').all()
     return render_template('home.html', jobs=jobs)
 
 
-# Employer: Submit job for approval
 @app.route('/employer', methods=['GET', 'POST'])
 def employer():
     if request.method == 'POST':
@@ -79,7 +66,6 @@ def employer():
     return render_template('employer.html')
 
 
-# Admin: Approve/Reject job posts
 @app.route('/admin', methods=['GET', 'POST'])
 def admin():
     jobs = Job.query.all()
@@ -95,7 +81,6 @@ def admin():
     return render_template('admin.html', jobs=jobs)
 
 
-# Applicant: Apply to job with PDF resume
 @app.route('/apply', methods=['GET', 'POST'])
 def apply():
     jobs = Job.query.filter_by(status='Approved').all()
@@ -109,7 +94,7 @@ def apply():
         reader = PdfReader(file)
         resume_text = "".join([page.extract_text() for page in reader.pages])
 
-        # ✅ Calculate similarity score
+        # ✅ Calculate similarity score using TF-IDF
         job = Job.query.get(job_id)
         if job:
             vectorizer = TfidfVectorizer()
