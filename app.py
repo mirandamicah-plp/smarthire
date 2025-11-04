@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from PyPDF2 import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from urllib.parse import urlparse, quote_plus # I-i-import natin ito para sa URL encoding
 
 # ============================
 # 🔧 Flask App Configuration
@@ -21,11 +22,23 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@loca
 # 🚀 HEROKU DEPLOYMENT FIX:
 # Check if DATABASE_URL (for Heroku/JawsDB) exists and overwrite the local URI.
 if os.environ.get("DATABASE_URL"):
-    # JawsDB URL is already in the correct mysql+pymysql format if configured properly 
-    # using the database_url library in Python, but since we are using Flask-SQLAlchemy, 
-    # we can use the raw DATABASE_URL from Heroku and it will often be handled correctly.
-    # The postgres replacement logic is removed as we are using MySQL (JawsDB).
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+    # NEW FIX: Parse and re-encode the password part of the URL to handle special characters 
+    # (like the colon ':' which is causing the 'invalid literal for int()' error).
+    db_url = os.environ.get("DATABASE_URL")
+    
+    # 1. Parse the original URL
+    result = urlparse(db_url)
+    
+    # 2. Encode the password to handle any special characters safely
+    encoded_password = quote_plus(result.password)
+    
+    # 3. Construct the new, safe SQLAlchemy URI
+    safe_db_uri = (
+        f"mysql+pymysql://{result.username}:{encoded_password}"
+        f"@{result.hostname}:{result.port}{result.path}"
+    )
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = safe_db_uri
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
