@@ -1,6 +1,7 @@
 services:
-- type: web
-  name: smarthire 
-  env: python
-  buildCommand: pip install -r requirements.txt --only-binary :all: && python -m spacy download en_core_web_sm
-  startCommand: gunicorn app:app
+  - type: web
+    name: smarthire
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    plan: free
