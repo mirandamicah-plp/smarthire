@@ -19,6 +19,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@loca
 
 # Render deployment: use DATABASE_URL if available
 if os.environ.get("DATABASE_URL"):
+    # Correcting the Heroku/Render database URI format
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL").replace("postgres://", "postgresql://")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -30,18 +31,9 @@ migrate = Migrate(app, db)
 # 🧱 DATABASE MODELS
 # DEPLOYMENT_ATTEMPT_1105
 class Job(db.Model):
-if result and result.password:
-    # Safely convert the password to a string and URL-encode it
-    encoded_password = quote_plus(str(result.password))
-else:
-    # Handle the critical case where the password data is missing (H10 crash cause)
-    # This prints a clear message to the Heroku logs and forces the app to quit.
-    print("\n\n!! CRITICAL STARTUP ERROR !!")
-    print("Failed to fetch required database password. 'result' or 'result.password' is None.")
-    print("Action Required: Check your database migrations, seeds, or environment variables.")
-    print("!! ----------------------- !!\n")
-    import sys
-    sys.exit(1)
+    # Added id (primary key) and correctly indented all attributes.
+    # The misplaced if/else troubleshooting block has been removed.
+    id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100))
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='Pending')
