@@ -28,7 +28,7 @@ migrate = Migrate(app, db)
 
 # ============================
 # 🧱 DATABASE MODELS
-# ============================
+# DEPLOYMENT_ATTEMPT_1105
 class Job(db.Model):
 if result and result.password:
     # Safely convert the password to a string and URL-encode it
