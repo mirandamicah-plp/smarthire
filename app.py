@@ -6,7 +6,6 @@ from flask_migrate import Migrate
 from PyPDF2 import PdfReader
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from urllib.parse import urlparse, quote_plus # I-i-import natin ito para sa URL encoding
 
 # ============================
 # 🔧 Flask App Configuration
@@ -15,30 +14,12 @@ app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
 # ✅ DATABASE CONFIGURATION
-# Heroku uses the DATABASE_URL environment variable (set by JawsDB)
 # Local MySQL (adjust password as needed)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:your_password@localhost/smarthire'
 
-# 🚀 HEROKU DEPLOYMENT FIX:
-# Check if DATABASE_URL (for Heroku/JawsDB) exists and overwrite the local URI.
+# Render deployment: use DATABASE_URL if available
 if os.environ.get("DATABASE_URL"):
-    # NEW FIX: Parse and re-encode the password part of the URL to handle special characters 
-    # (like the colon ':' which is causing the 'invalid literal for int()' error).
-    db_url = os.environ.get("DATABASE_URL")
-    
-    # 1. Parse the original URL
-    result = urlparse(db_url)
-    
-    # 2. Encode the password to handle any special characters safely
-    encoded_password = quote_plus(result.password)
-    
-    # 3. Construct the new, safe SQLAlchemy URI
-    safe_db_uri = (
-        f"mysql+pymysql://{result.username}:{encoded_password}"
-        f"@{result.hostname}:{result.port}{result.path}"
-    )
-
-    app.config['SQLALCHEMY_DATABASE_URI'] = safe_db_uri
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL").replace("postgres://", "postgresql://")
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -49,7 +30,18 @@ migrate = Migrate(app, db)
 # 🧱 DATABASE MODELS
 # ============================
 class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+if result and result.password:
+    # Safely convert the password to a string and URL-encode it
+    encoded_password = quote_plus(str(result.password))
+else:
+    # Handle the critical case where the password data is missing (H10 crash cause)
+    # This prints a clear message to the Heroku logs and forces the app to quit.
+    print("\n\n!! CRITICAL STARTUP ERROR !!")
+    print("Failed to fetch required database password. 'result' or 'result.password' is None.")
+    print("Action Required: Check your database migrations, seeds, or environment variables.")
+    print("!! ----------------------- !!\n")
+    import sys
+    sys.exit(1)
     title = db.Column(db.String(100))
     description = db.Column(db.Text)
     status = db.Column(db.String(20), default='Pending')
@@ -135,6 +127,5 @@ def apply():
 # 🚀 DEPLOYMENT ENTRY POINT
 # ============================
 if __name__ == '__main__':
-    # Ensure app runs on the correct Heroku PORT, falling back to 5000 for local development.
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port, debug=False)
