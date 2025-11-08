@@ -345,9 +345,52 @@
         .status-pending { background: rgba(230,167,0,0.1); color: #e6a700; }
         .status-inactive { background: rgba(200,0,0,0.1); color: #c00; }
 
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        .toast {
+            background: #08106E;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateX(120%);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            min-width: 250px;
+            max-width: 400px;
+            font-weight: 500;
+            pointer-events: auto;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.success {
+            background: #28a745;
+        }
+        .toast.error {
+            background: #dc3545;
+        }
+        .toast.warning {
+            background: #ffc107;
+            color: #000;
+        }
+        .toast.info {
+            background: #17a2b8;
+        }
+
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
     <!-- Navbar -->
     <div class="navbar">
         <div class="logo">SmartHire Admin</div>
@@ -358,7 +401,7 @@
                 <a href="#user-management">User Management</a>
             </div>
             <form action="/" method="GET">
-                <button class="logout-btn" onclick="showNotification('Logged out successfully!');">Logout</button>
+                <button class="logout-btn" onclick="showNotification('Logged out successfully!'); showToast('Logging out...', 'info', 2000)">Logout</button>
             </form>
         </div>
     </div>
@@ -399,9 +442,9 @@
                     <p id="stat-jobs">0</p> 
                 </div>
                 <div class="stat-card" onclick="showDetails('Resume', 'Resumes Uploaded')">
-                    <h3>Resumes Uploaded</h3>
-                                        <p id="stat-resumes">{{ resume_count }}</p>
-                </div>
+                    <h3>Resumes Uploaded</h3>
+                                        <p id="stat-resumes">{{ resume_count }}</p>
+                </div>
             </div>
 
 <h2 style="margin-top:40px;">📋 Detailed Records</h2>
@@ -419,7 +462,6 @@
         </tr>
     </thead>
     <tbody>
-        <!-- Applicants -->
         {% for applicant in applicants_list %}
         <tr data-role="Applicant">
             <td>{{ applicant.id }}</td>
@@ -430,7 +472,6 @@
         </tr>
         {% endfor %}
 
-        <!-- Employers -->
         {% for employer in employers_list %}
         <tr data-role="Employer">
             <td>{{ employer.id }}</td>
@@ -441,24 +482,33 @@
         </tr>
         {% endfor %}
 
-        <!-- Jobs -->
-{% for job in all_jobs %}
-<tr data-role="Job">
-    <td>{{ job.id }}</td>
-    <td>{{ job.title }}</td>
-    <td>Job</td>
-    <td>{{ job.company }}</td>
-    <td>Location: {{ job.location or 'N/A' }}</td>
-</tr>
-{% endfor %}
+        {% for job in all_jobs %}
+        <tr data-role="Job">
+            <td>{{ job.id }}</td>
+            <td>{{ job.title }}</td>
+            <td>Job</td>
+            <td>{{ job.company }}</td>
+            <td>Location: {{ job.location or 'N/A' }}</td>
+        </tr>
+        {% endfor %}
 
+        {% for resume in all_resumes %}
+        <tr data-role="Resume">
+            <td>{{ resume.id }}</td>
+            <td>{{ resume.filename or 'Unnamed Resume' }}</td>
+            <td>Resume</td>
+            <td>{{ resume.uploaded_by_email or 'N/A' }}</td>
+            <td>Upload Date: {{ resume.uploaded_at.strftime('%Y-%m-%d') if resume.uploaded_at else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
     </tbody>
 </table>
-            <!-- Show All button -->
-            <div style="text-align:left;">
-                <button id="showAllBtn" class="show-all-btn" onclick="showDetails('All', 'All Records')">Show All Records</button>
-            </div>
-        </div>
+
+<div style="text-align:left;">
+    <button id="showAllBtn" class="show-all-btn" onclick="showDetails('All', 'All Records'); showToast('Loading all records...', 'info', 1500)">Show All Records</button>
+</div>
+
+</div>
 
 <!-- Job Post Management -->
 <div class="card" id="job-post">
@@ -497,7 +547,7 @@
                     <td>{{ job.created_at.strftime('%Y-%m-%d') if job.created_at else 'N/A' }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('archive_job', job_id=job.id) }}">
-                            <button type="submit" class="delete-btn">Archive</button>
+                            <button type="submit" class="delete-btn" onclick="showToast('Archiving job...', 'info', 2000)">Archive</button>
                         </form>
                     </td>
                 </tr>
@@ -529,10 +579,10 @@
                     <td>{{ job.created_at.strftime('%Y-%m-%d') if job.created_at else 'N/A' }}</td>
                     <td>
                         <form method="POST" action="{{ url_for('approve_job', job_id=job.id) }}">
-                            <button type="submit" class="edit-btn" style="background:#28a745;color:white;">Approve</button>
+                            <button type="submit" class="edit-btn" style="background:#28a745;color:white;" onclick="showToast('Approving job...', 'success', 2000)">Approve</button>
                         </form>
                         <form method="POST" action="{{ url_for('archive_job', job_id=job.id) }}" style="margin-top:5px;">
-                            <button type="submit" class="delete-btn">Archive</button>
+                            <button type="submit" class="delete-btn" onclick="showToast('Archiving job...', 'info', 2000)">Archive</button>
                         </form>
                     </td>
                 </tr>
@@ -585,8 +635,8 @@
                     <td>{{ applicant.skills }}</td>
                     <td>{{ applicant.experience }}</td>
                     <td>
-                        <button class="edit-btn" onclick="openEditModal(this)">Edit</button>
-                        <button class="delete-btn" onclick="openConfirmationModal(this, 'archive')">Archive</button>
+                        <button class="edit-btn" onclick="openEditModal(this); showToast('Opening edit form...', 'info', 1500)">Edit</button>
+                        <button class="delete-btn" onclick="openConfirmationModal(this, 'archive'); showToast('Opening confirmation...', 'warning', 1500)">Archive</button>
                     </td>
                 </tr>
             {% endfor %}
@@ -613,8 +663,8 @@
                     <td>{{ employer.email }}</td>
                     <td>{{ employer.company }}</td>
                     <td>
-                        <button class="edit-btn" onclick="openEditModal(this)">Edit</button>
-                        <button class="delete-btn" onclick="openConfirmationModal(this, 'archive')">Archive</button>
+                        <button class="edit-btn" onclick="openEditModal(this); showToast('Opening edit form...', 'info', 1500)">Edit</button>
+                        <button class="delete-btn" onclick="openConfirmationModal(this, 'archive'); showToast('Opening confirmation...', 'warning', 1500)">Archive</button>
                     </td>
                 </tr>
             {% endfor %}
@@ -635,8 +685,8 @@
             <h3 style="color:#D9534F;">Confirmation Required</h3>
             <p id="confirmationMessage">Are you sure you want to archive this record?</p>
             <div class="modal-actions">
-                <button class="delete-btn" onclick="closeConfirmationModal()">Cancel</button>
-                <button class="edit-btn" style="background:#D9534F; color:white;" id="confirmActionBtn">Confirm Archive</button>
+                <button class="delete-btn" onclick="closeConfirmationModal(); showToast('Cancelled', 'warning', 1500)">Cancel</button>
+                <button class="edit-btn" style="background:#D9534F; color:white;" id="confirmActionBtn" onclick="showToast('Archiving record...', 'info', 2000)">Confirm Archive</button>
             </div>
         </div>
     </div>
@@ -650,8 +700,8 @@
                 <div id="editFormFields"></div>
             </form>
             <div class="modal-actions" style="justify-content: flex-end;">
-                <button type="button" class="delete-btn" onclick="closeEditModal()">Cancel</button>
-                <button type="button" class="edit-btn" style="background:#28a745; color:white;" onclick="saveEditChanges()">Save Changes</button>
+                <button type="button" class="delete-btn" onclick="closeEditModal(); showToast('Cancelled', 'warning', 1500)">Cancel</button>
+                <button type="button" class="edit-btn" style="background:#28a745; color:white;" onclick="saveEditChanges(); showToast('Saving changes...', 'info', 2000)">Save Changes</button>
             </div>
         </div>
     </div>
@@ -668,6 +718,24 @@ function showNotification(message) {
     alertBox.textContent = message;
     alertBox.classList.add("show");
     setTimeout(() => alertBox.classList.remove("show"), 3000);
+}
+
+/** Toast Notification Function */
+function showToast(message, type = 'default', duration = 3000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => container.removeChild(toast), 400);
+    }, duration);
 }
 
 /** Update Dashboard Stats */
@@ -727,6 +795,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 /** Dashboard Details Table */
+/** Dashboard Details Table */
 function showDetails(type, labelText = '') {
     const table = document.getElementById("recordsTable");
     const rows = table.querySelectorAll("tbody tr");
@@ -746,7 +815,7 @@ function showDetails(type, labelText = '') {
         row.style.display = (row.dataset.role && row.dataset.role.toLowerCase() === type.toLowerCase()) ? "" : "none";
     });
 
-    sectionLabel.textContent = labelText || '';
+    sectionLabel.textContent = labelText || ''; // This is the clean, final line
 }
 
 /** Tabs */
@@ -852,17 +921,61 @@ function closeEditModal() {
 }
 
 function saveEditChanges() {
-    if(rowToEdit && cellsToUpdate.length > 0) {
-        for(let i=0; i<cellsToUpdate.length; i++){
+    if (rowToEdit && cellsToUpdate.length > 0) {
+        
+        // 1. Gather necessary metadata
+        // ID is in the first cell of the row (cells[0])
+        const recordId = rowToEdit.cells[0].innerText;
+        // Role is set on the <tr> tag: <tr data-role="Applicant">
+        const recordType = rowToEdit.dataset.role; 
+        
+        const editedData = {};
+        
+        // Collect column headers from the table to use as keys for the server update
+        const headers = Array.from(rowToEdit.closest('table').querySelectorAll('thead th')).map(th => {
+             // CRITICAL: Convert table header 'Experience' to database column name 'experience' (lowercase, no spaces)
+            return th.textContent.toLowerCase().replace(/ /g, '_');
+        });
+
+        // 2. Collect updated values and perform immediate visual update
+        for (let i = 0; i < cellsToUpdate.length; i++) {
             const input = document.getElementById(`edit-field-${i}`);
-            if(input) cellsToUpdate[i].innerText = input.value;
+            if (input) {
+                // Use the cleaned header as the key (e.g., 'fullname', 'email', 'experience')
+                editedData[headers[i]] = input.value;
+                
+                // Visually update the table cell
+                cellsToUpdate[i].innerText = input.value;
+            }
         }
+
+        // 3. Send the update request to the Flask server
+        fetch(`/update_user_record/${recordType}/${recordId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(editedData)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(`Changes saved successfully for ID ${recordId}!`);
+            } else {
+                showNotification(`Error saving changes for ID ${recordId}: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            showNotification('Network error occurred while saving.', 'error');
+        });
+
+        // 4. Complete front-end actions
         closeEditModal();
-        showNotification(`Changes saved successfully for "${document.getElementById('edit-field-0').value}"!`);
-        updateDashboardStats();
+        updateDashboardStats(); 
     } else {
         closeEditModal();
-        showNotification("Error: Could not update record.", 'error');
+        showNotification("Error: Could not find record to update.", 'error');
     }
 }
 </script>
