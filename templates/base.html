@@ -6,9 +6,9 @@
     <style>
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
-            background: #C3EBFF;
-            height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #C3EBFF 0%, #a8d5f0 100%);
+            min-height: 100vh;
             display: flex;
         }
 
@@ -21,10 +21,12 @@
 
         .form-box {
             background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            width: 320px;
+            padding: 3rem 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 480px;
+            min-height: auto;
         }
 
         h2 {
@@ -94,6 +96,17 @@
         .right img {
             max-width: 60%;
             height: auto;
+            filter: drop-shadow(0 10px 30px rgba(0,0,0,0.1));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
         }
 
         @media (max-width: 768px) {
@@ -105,9 +118,53 @@
                 margin-top: 20px;
             }
         }
+
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            pointer-events: none;
+        }
+        .toast {
+            background: #08106E;
+            color: white;
+            padding: 14px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            margin-bottom: 10px;
+            opacity: 0;
+            transform: translateX(120%);
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            min-width: 250px;
+            max-width: 400px;
+            font-weight: 500;
+            pointer-events: auto;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .toast.success {
+            background: #28a745;
+        }
+        .toast.error {
+            background: #dc3545;
+        }
+        .toast.warning {
+            background: #ffc107;
+            color: #000;
+        }
+        .toast.info {
+            background: #17a2b8;
+        }
     </style>
 </head>
 <body>
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
     <div class="left">
         <div class="form-box">
             {% block content %}{% endblock %}
@@ -126,6 +183,27 @@
                 passwordInput.type = "password";
             }
         }
+
+        // Toast Notification Function
+        function showToast(message, type = 'default', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+
+            // Remove after duration
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => container.removeChild(toast), 400);
+            }, duration);
+        }
     </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>
