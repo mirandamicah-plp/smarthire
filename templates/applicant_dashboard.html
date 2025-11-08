@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Applicant Dashboard — SmartHire</title>
+  <title>Applicant Dashboard</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -116,14 +116,13 @@
       align-items:flex-start;
     }
 
-    /* Left column (main) */
+    /* Main column only (we removed side column) */
     .main {
-      flex: 1 1 720px;
+      width: 100%;
     }
-    .side {
-      width:320px;
-      position:relative;
-    }
+
+    /* hide side (if any left by mistake) */
+    .side { display:none; }
 
     .card {
       background: var(--card);
@@ -134,7 +133,29 @@
       border: 1px solid rgba(10,30,85,0.03);
     }
 
-    /* Dashboard card with animated stats */
+    /* Make all cards inside the main column full width and aligned */
+    .dashboard-content-container { display:block; gap:18px; }
+    .dashboard-content-container .card { width:100%; }
+
+    .image-slider {
+        overflow: hidden;
+        border-radius: 8px;
+    }
+
+    .slides {
+        display: flex;
+        width: 300%;
+        transition: transform 0.5s ease-in-out;
+    }
+
+    .slides img {
+        width: calc(100% / 3);
+        height: auto;
+        display: block;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
     .stats {
       display:flex;
       gap:18px;
@@ -153,7 +174,6 @@
     .stat .num { font-size:20px; font-weight:800; color: #ffffff }
     .stat .label{ font-size:13px; color: #ffffff; margin-top:6px }
 
-    /* Profile card */
     .profile-top {
       display:flex;
       gap:12px;
@@ -166,6 +186,7 @@
       font-size:20px;color:var(--accent-dark);font-weight:800;
       box-shadow: 0 8px 20px rgba(74,108,247,0.08);
       border: 1px solid rgba(74,108,247,0.08);
+      flex-shrink:0;
     }
     .profile-meta { flex:1 }
     .profile-meta .name { font-size:16px; font-weight:800 }
@@ -185,7 +206,6 @@
     }
     .progress-meta { display:flex;justify-content:space-between;margin-top:8px;font-size:13px;color:var(--muted) }
 
-    /* Job list: search + filters */
     .search-bar {
       display:flex;
       gap:12px;
@@ -200,7 +220,6 @@
       min-width:160px;padding:10px 12px;border-radius:10px;border:1px solid #dbe9ff;background:#fbfdff;font-size:14px;
     }
 
-    /* Job cards */
     .job-grid { display:grid; grid-template-columns:1fr; gap:12px; margin-top:8px }
     .job-card {
       display:flex;
@@ -238,12 +257,11 @@
       transition: transform .18s ease, box-shadow .18s ease;
 }
 a.apply-btn {
-  background: var(--text-dark) !important; /* Force dark blue background */
-  color: white !important; /* Force white text */
-  text-decoration: none !important; /* Crucial: Remove underline */
+  background: var(--text-dark) !important;
+  color: white !important;
+  text-decoration: none !important;
 }
 
-    /* Job history table */
     .job-table {
       width: 100%;
       border-collapse: collapse;
@@ -279,7 +297,6 @@ a.apply-btn {
     }
     .resume-box a { text-decoration:none; font-weight:800; color:var(--accent-dark) }
 
-    /* footer */
     .footer {
       background: #F0F1F7;
       color: var(--text-dark);
@@ -294,22 +311,62 @@ a.apply-btn {
       z-index:100;
     }
 
-    /* small screens */
     @media (max-width: 940px){
-      .row { flex-direction:column-reverse }
-      .side { width:100% }
+      .row { flex-direction:column }
       .main { width:100% }
       .job-right { text-align:left; min-width:auto }
+      .profile-top { flex-direction:row; align-items:center }
     }
 
-    /* micro animations for counters */
     .count-up { font-variant-numeric: tabular-nums; }
+
+    /* Toast Notification Styles */
+    .toast-container {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 10000;
+        pointer-events: none;
+    }
+    .toast {
+        background: #08106E;
+        color: white;
+        padding: 14px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        margin-bottom: 10px;
+        opacity: 0;
+        transform: translateX(120%);
+        transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        min-width: 250px;
+        max-width: 400px;
+        font-weight: 500;
+        pointer-events: auto;
+    }
+    .toast.show {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    .toast.success {
+        background: #28a745;
+    }
+    .toast.error {
+        background: #dc3545;
+    }
+    .toast.warning {
+        background: #ffc107;
+        color: #000;
+    }
+    .toast.info {
+        background: #17a2b8;
+    }
   </style>
 </head>
 
 <body>
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
 
-  <!-- Navbar -->
   <div class="navbar">
     <div class="logo">SmartHire Applicant</div>
     <div class="right-side">
@@ -321,335 +378,373 @@ a.apply-btn {
         <a href="#job-history">Job History</a>
       </div>
       <form action="{{ url_for('logout') }}" method="POST">
-        <button class="logout-btn">Logout</button>
+        <button class="logout-btn" onclick="showToast('Logging out...', 'info', 2000)">Logout</button>
       </form>
     </div>
   </div>
 
-  <!-- Floating Alert Box -->
   <div id="alert" class="card" style="position:fixed;right:24px;top:80px;z-index:2000;opacity:0;transform:translateY(-10px);transition:all .45s cubic-bezier(.2,.9,.2,1)">
     <strong>Welcome back!</strong> Your profile is ready — keep it up ✨
   </div>
 
-  <!-- Content -->
   <div class="content">
     <h1>Welcome, {{ applicant.fullname }} 👋</h1>
 
     <div class="row">
-      <!-- main column -->
       <div class="main">
-        <!-- Dashboard Overview -->
+        <!-- Dashboard slider -->
         <div class="card" id="dashboard">
-          <h2>📊 Dashboard Overview</h2>
-          <p style="margin:6px 0 12px 0;color:var(--muted)">Quick summary of your job search activity and profile health.</p>
-
-          <div class="stats">
-            <div class="stat">
-              <div class="num count-up" data-target="{{ applications|length }}">0</div>
-              <div class="label">Applications</div>
-            </div>
-            <div class="stat">
-              <div class="num count-up" data-target="{{ interviews|length }}">0</div>
-              <div class="label">Interviews</div>
-            </div>
-            <div class="stat">
-              <div class="num count-up" data-target="{{ matches|length }}">0</div>
-              <div class="label">Matches</div>
+          <div class="image-slider">
+            <div class="slides">
+              <img src="{{ url_for('static', filename='images/dashboardE1.jpg') }}" alt="Dashboard Slide 1: Tips on Applications">
+              <img src="{{ url_for('static', filename='images/dashboardE2.jpg') }}" alt="Dashboard Slide 2: Interview Prep Guide">
+              <img src="{{ url_for('static', filename='images/dashboardE3.jpg') }}" alt="Dashboard Slide 3: New Job Matches">
             </div>
           </div>
         </div>
 
-        <!-- Job List -->
-        <div class="card" id="job-list">
-          <h2>💼 Job List</h2>
-          <p style="margin:6px 0 10px 0;color:var(--muted)">Recommended opportunities based on your profile — refine with search & filters.</p>
+        <!-- All main pages stacked and aligned inside main column -->
+        <div class="dashboard-content-container">
 
-          <div class="search-bar">
-            <input id="job-search" type="text" placeholder="Search job title, company, or location..." aria-label="Search jobs">
-            <select id="job-filter" class="filter-select" aria-label="Filter by location">
-              <option value="all">All locations</option>
-              <option value="manila">Manila</option>
-              <option value="cebu">Cebu</option>
-              <option value="remote">Remote</option>
-            </select>
-          </div>
-
-          <div id="jobs" class="job-grid">
-            {% for job in jobs %}
-            <div class="job-card" data-title="{{ job.title }}" data-location="{{ job.location }}">
-              <div class="job-left">
-                <div class="comp-logo">{{ job.company[:2]|upper }}</div>
-                <div class="job-info">
-                  <div class="title">{{ job.title }}</div>
-                  <div class="meta">{{ job.company }} • {{ job.location }} • {{ job.job_type }}</div>
-                </div>
-              </div>
-              <div class="job-right">
-                <div class="salary">{{ job.salary }}</div>
-                {% if job.id in applied_job_ids %}
-                <button class="apply-btn" disabled>Applied</button>
+          <!-- Profile (moved into main) -->
+          <div class="card" id="profile">
+            <div class="profile-top">
+              <div class="avatar" id="avatar-text">
+                {% if applicant.profile_image_url %}
+                <img src="{{ applicant.profile_image_url }}"
+                     alt="{{ applicant.fullname }} Profile Picture"
+                     style="width: 100%; height: 100%; object-fit: cover; border-radius: 14px;">
                 {% else %}
-                <button class="apply-btn" onclick="applyJob('{{ job.title }}','{{ job.company }}')">Apply</button>
+                {{ (applicant.fullname or '')[:2]|upper }}
                 {% endif %}
               </div>
+              <div class="profile-meta">
+                <div class="name" id="display-name">{{ applicant.fullname }}</div>
+                <div class="role">{{ applicant.target_job or 'Looking for opportunities' }}</div>
+              </div>
             </div>
-            {% endfor %}
+
+            <div style="margin-top:12px;font-size:14px;color:var(--muted)">
+              <strong>Skills:</strong> {{ applicant.skills or '—' }}
+            </div>
+
+            <div class="progress-wrap" style="margin-top:12px">
+              <div class="progress">
+                <div class="bar" id="progress-bar"></div>
+              </div>
+              <div class="progress-meta">
+                <span>Profile Completion</span>
+                <span id="profile-percent">0%</span>
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; margin-top:18px;">
+              <a href="{{ url_for('edit_profile') }}"
+                 class="apply-btn"
+                 style="flex:1; text-align:center;"
+                 onclick="showToast('Opening profile editor...', 'info', 1500)">
+                Edit Profile
+              </a>
+
+{% if applicant.resume_filename %}
+              <a href="{{ url_for('uploaded_file', filename=applicant.resume_filename) }}" target="_blank"
+                 class="apply-btn"
+                 style="flex:1; text-align:center;"
+                 onclick="showToast('Opening resume...', 'info', 1500)">
+                View Resume
+              </a>
+              {% else %}
+              <button class="apply-btn"
+                      onclick="window.location.href='#upload-resume'; showToast('Navigating to upload...', 'info', 1500)"
+                      style="flex:1; text-align:center; background-color: var(--success);">
+                Upload Resume
+              </button>
+              {% endif %}
+            </div>
+
+            <div id="edit-profile-form" style="display:none; margin-top:12px; border-top:1px solid #eef5ff; padding-top:12px;">
+              <label for="edit-fullname" style="display:block;font-weight:700;margin-bottom:6px">Full Name</label>
+              <input type="text" id="edit-fullname" value="{{ applicant.fullname }}" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #dbe9ff; margin-bottom:10px;">
+
+              <label for="edit-jobtitle" style="display:block;font-weight:700;margin-bottom:6px">Target Job Title</label>
+              <input type="text" id="edit-jobtitle" value="{{ applicant.target_job or '' }}" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #dbe9ff; margin-bottom:10px;">
+
+              <button type="button" onclick="saveProfile(); showToast('Saving profile...', 'info', 2000)" class="apply-btn" style="width:100%">💾 Save</button>
+            </div>
           </div>
-        </div>
+          <!-- End profile -->
 
-<!-- Upload Resume -->
-<div class="card" id="upload-resume">
-  <h2>📂 Upload Resume</h2>
-  <p style="margin:6px 0 12px 0;color:var(--muted)">
-    Update your resume and target job title to improve matches.
-  </p>
+          <!-- Job List -->
+          <div class="card" id="job-list">
+            <h2>💼 Job List</h2>
+            <p style="margin:6px 0 10px 0;color:var(--muted)">Recommended opportunities based on your profile — refine with search & filters.</p>
 
-  <form class="upload-form" action="{{ url_for('upload_resume') }}" method="POST" enctype="multipart/form-data">
-    <div style="margin-bottom:10px">
-      <label for="fullname" style="display:block;font-weight:700;margin-bottom:6px">Full Name</label>
-      <input type="text" id="fullname" name="fullname" placeholder="Enter your full name" value="{{ applicant.fullname }}" required>
-    </div>
+            <div class="search-bar">
+              <input id="job-search" type="text" placeholder="Search job title, company, or location..." aria-label="Search jobs">
+              <select id="job-filter" class="filter-select" aria-label="Filter by location">
+                <option value="all">All locations</option>
+                <option value="Pasig City">Pasig City</option>
+                <option value="Remote">Remote</option>
+              </select>
+            </div>
 
-    <div style="margin-bottom:10px">
-      <label for="jobtitle" style="display:block;font-weight:700;margin-bottom:6px">Job Title Applying For</label>
-      <input type="text" id="jobtitle" name="jobtitle" placeholder="Enter the job title" value="{{ applicant.target_job or '' }}" required>
-    </div>
-
-    <div style="margin-bottom:14px">
-      <label style="display:block;font-weight:700;margin-bottom:6px">Upload Resume (PDF only)</label>
-      <div style="display:flex; gap:12px; align-items:center;">
-        <div id="file-name" style="flex:1; font-style:italic; color:var(--muted);">
-          {{ applicant.resume_filename or 'No file chosen' }}
-        </div>
-        <label for="resume" class="apply-btn" style="cursor:pointer; background:#08106E; color:white; padding:8px 12px; border-radius:10px;">
-          Choose File
-        </label>
-        <input type="file" id="resume" name="resume" accept="application/pdf" style="display:none;">
-      </div>
-    </div>
-
-    <div>
-      <button type="submit" class="apply-btn" style="width:180px">🚀 Submit Application</button>
-    </div>
-  </form>
-</div>
-
-        <!-- Job History -->
-        <div class="card" id="job-history">
-          <h2>📝 Job History</h2>
-          <p style="margin:6px 0 12px 0;color:var(--muted)">Your recent applications and statuses.</p>
-
-          <table class="job-table" aria-label="Job history">
-            <thead>
-              <tr>
-                <th>Job Title</th>
-                <th>Company</th>
-                <th>Date Applied</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody id="history-body">
-              {% for app in applications %}
-              <tr>
-                <td>{{ app.job.title }}</td>
-                <td>{{ app.job.company }}</td>
-                <td>{{ app.created_at.date() }}</td>
-                <td>
-                  <span class="status-pill
-                    {% if app.status == 'Submitted' %}status-applied
-                    {% elif app.status == 'Pending' %}status-pending
-                    {% elif app.status == 'Interview' %}status-interview
-                    {% endif %}">
-                    {{ app.status }}
-                  </span>
-                </td>
-              </tr>
+            <div id="jobs" class="job-grid">
+              {% for job in jobs %}
+              <div class="job-card" data-title="{{ job.title }}" data-location="{{ job.location }}">
+                <div class="job-left">
+                  <div class="comp-logo">{{ job.company[:2]|upper }}</div>
+                  <div class="job-info">
+                    <div class="title">{{ job.title }}</div>
+                    <div class="meta">{{ job.company }} • {{ job.location }} • {{ job.job_type }}</div>
+                  </div>
+                </div>
+                <div class="job-right">
+                  <div class="salary">{{ job.salary }}</div>
+                  {% if job.id in applied_job_ids %}
+                    {% set application = applications|selectattr('job_id', 'equalto', job.id)|first %}
+                    <button class="apply-btn" disabled title="Application Status: {{ application.status if application else 'Applied' }}">
+                      {% if application %}
+                        {{ application.status }}
+                      {% else %}
+                        Applied
+                      {% endif %}
+                    </button>
+                  {% else %}
+                  <form action="{{ url_for('apply_job', job_id=job.id) }}" method="POST" style="display:inline;">
+                    <button type="submit" class="apply-btn" onclick="showToast('Submitting application...', 'success', 2000)">Apply</button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
               {% endfor %}
-            </tbody>
-          </table>
-
-          <div class="resume-box">
-            📄 Latest Uploaded Resume:
-            {% if applicant.resume_filename %}
-            <a href="{{ url_for('uploaded_file', filename=applicant.resume_filename) }}" target="_blank">View / Download</a>
-            {% else %}
-            <span style="color:var(--muted)">No resume uploaded</span>
-            {% endif %}
+            </div>
           </div>
-        </div>
-      </div>
+          <!-- End Job List -->
 
-<!-- Side Column: Profile Card -->
-<div class="card" id="profile">
-  <div class="profile-top">
-    <div class="avatar" id="avatar-text">{{ applicant.fullname[:2]|upper }}</div>
-    <div class="profile-meta">
-      <div class="name" id="display-name">{{ applicant.fullname }}</div>
-      <div class="role">{{ applicant.target_job or 'Looking for opportunities' }}</div>
-    </div>
-  </div>
+          <!-- Upload Resume -->
+          <div class="card" id="upload-resume">
+            <h2>📂 Upload Resume</h2>
+            <p style="margin:6px 0 12px 0;color:var(--muted)">
+              Update your resume and target job title to improve matches.
+            </p>
 
-  <div style="margin-top:12px;font-size:14px;color:var(--muted)">
-    <strong>Skills:</strong> {{ applicant.skills or '—' }}
-  </div>
-  
-  <div class="progress-wrap" style="margin-top:12px">
-    <div class="progress">
-      <div class="bar" id="progress-bar"></div>
-    </div>
-    <div class="progress-meta">
-      <span>Profile Completion</span>
-      <span id="profile-percent">0%</span>
-    </div>
-  </div>
+            <form class="upload-form" action="{{ url_for('upload_resume') }}" method="POST" enctype="multipart/form-data">
+              <div style="margin-bottom:10px">
+                <label for="fullname" style="display:block;font-weight:700;margin-bottom:6px">Full Name</label>
+                <input type="text" id="fullname" name="fullname" placeholder="Enter your full name" value="{{ applicant.fullname }}" required style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #dbe9ff;">
+              </div>
 
-<div style="display:flex; gap:10px; margin-top:18px;">
-        <a href="{{ url_for('edit_profile') }}"
-     class="apply-btn"
-     style="flex:1; 
-            text-align:center;">
-      Edit Profile
-    </a>
+              <div style="margin-bottom:10px">
+                <label for="jobtitle" style="display:block;font-weight:700;margin-bottom:6px">Job Title Applying For</label>
+                <input type="text" id="jobtitle" name="jobtitle" placeholder="Enter the job title" value="{{ applicant.target_job or '' }}" required style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #dbe9ff;">
+              </div>
 
-        <a href="{{ url_for('uploaded_file', filename=applicant.resume_filename) }}" target="_blank"
-     class="apply-btn"
-     style="flex:1; 
-            text-align:center;">
-      View Resume
-    </a>
-</div>
-</div>
+              <div style="margin-bottom:14px">
+                <label style="display:block;font-weight:700;margin-bottom:6px">Upload Resume (PDF only)</label>
+                <div style="display:flex; gap:12px; align-items:center;">
+                  <div id="file-name" style="flex:1; font-style:italic; color:var(--muted);">
+                    {{ applicant.resume_filename or 'No file chosen' }}
+                  </div>
+                  <label for="resume" class="apply-btn" style="cursor:pointer; background:#08106E; color:white; padding:8px 12px; border-radius:10px;">
+                    Choose File
+                  </label>
+                  <input type="file" id="resume" name="resume" accept="application/pdf" style="display:none;">
+                </div>
+              </div>
 
- <!-- Hidden Edit Form -->
-<div id="edit-profile-form" style="display:none; margin-top:12px; border-top:1px solid #eef5ff; padding-top:12px;">
-    <label for="edit-fullname" style="display:block;font-weight:700;margin-bottom:6px">Full Name</label>
-    <input type="text" id="edit-fullname" value="{{ applicant.fullname }}" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #dbe9ff; margin-bottom:10px;">
+              <div>
+                <button type="submit" class="apply-btn" style="width:180px" onclick="showToast('Submitting application...', 'success', 2000)">🚀 Submit Application</button>
+              </div>
+            </form>
+          </div>
+          <!-- End Upload Resume -->
 
-    <label for="edit-jobtitle" style="display:block;font-weight:700;margin-bottom:6px">Target Job Title</label>
-    <input type="text" id="edit-jobtitle" value="{{ applicant.target_job or '' }}" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid #dbe9ff; margin-bottom:10px;">
+          <!-- Job History -->
+          <div class="card" id="job-history">
+            <h2>📝 Job History</h2>
+            <p style="margin:6px 0 12px 0;color:var(--muted)">Your recent applications and statuses. All applications are saved in the Application database table.</p>
 
-    <button type="button" onclick="saveProfile()" class="apply-btn" style="width:100%">💾 Save</button>
-  </div>
-</div>
+            <table class="job-table" aria-label="Job history">
+              <thead>
+                <tr>
+                  <th>Job Title</th>
+                  <th>Company</th>
+                  <th>Date Applied</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+<tbody id="history-body">
+    {% for app in applications %}
+    <tr>
+        
+        {% if app.job %}
+            <td>{{ app.job.title }}</td>
+            <td>{{ app.job.company }}</td>
+            <td>{{ app.created_at.date() }}</td>
+        {% else %}
+            <td colspan="2" style="color: #c72c41; font-style: italic;">[Job Post Deleted]</td>
+            <td>{{ app.created_at.date() }}</td>
+        {% endif %}
+        
+        <td>
+            <span class="status-pill 
+                {% if app.status == 'Submitted' %}status-applied
+                {% elif app.status == 'Pending' %}status-pending
+                {% elif app.status == 'Interview' %}status-interview
+                {% endif %}">
+                {{ app.status }}
+            </span>
+        </td>
+    </tr>
+    {% else %}
+    <tr>
+        <td colspan="4" style="text-align: center; padding: 15px; color:var(--muted)">
+            No applications found yet. Start applying!
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>
+            </table>
 
-  <!-- Footer -->
+            <div class="resume-box">
+              📄 Latest Uploaded Resume:
+              {% if applicant.resume_filename %}
+              <a href="{{ url_for('uploaded_file', filename=applicant.resume_filename) }}" target="_blank">View / Download</a>
+              {% else %}
+              <span style="color:var(--muted)">No resume uploaded</span>
+              {% endif %}
+            </div>
+          </div>
+          <!-- End Job History -->
+
+        </div> <!-- end dashboard-content-container -->
+
+      </div> <!-- end main -->
+    </div> <!-- end row -->
+  </div> <!-- end content -->
+
   <footer class="footer">
     © 2025 SmartHire. All rights reserved.
   </footer>
 
-  <script>
-    // SHOW floating alert
+<script>
+    // slider variables
+    let currentSlide = 0;
+    const totalSlides = 3;
+
+    function moveSlider() {
+      const slidesContainer = document.querySelector('.slides');
+      if (!slidesContainer) return;
+      slidesContainer.style.transform = `translateX(-${currentSlide * (100 / totalSlides)}%)`;
+    }
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      moveSlider();
+    }
+    setInterval(nextSlide, 5000);
+
+    // floating alert + setup on load
     window.addEventListener('load', () => {
       const a = document.getElementById('alert');
-      a.style.opacity = 1;
-      a.style.transform = 'translateY(0)';
-      setTimeout(()=>{ a.style.opacity=0; a.style.transform='translateY(-10px)' }, 3200);
+      if (a) {
+        a.style.opacity = 1;
+        a.style.transform = 'translateY(0)';
+        setTimeout(()=>{ a.style.opacity=0; a.style.transform='translateY(-10px)' }, 3200);
+      }
 
-      // animate counters
-      document.querySelectorAll('.count-up').forEach(el => {
-        const target = +el.getAttribute('data-target') || 0;
-        let current = 0;
-        const step = Math.max(1, Math.floor(target / 30));
-        const id = setInterval(() => {
-          current += step;
-          if (current >= target) { current = target; clearInterval(id) }
-          el.textContent = current;
-        }, 18);
-      });
+      // set progress bar (example value)
+      const percent = 72;
+      const pb = document.getElementById('progress-bar');
+      const pp = document.getElementById('profile-percent');
+      if (pb) pb.style.width = percent + '%';
+      if (pp) pp.textContent = percent + '%';
 
-      // set progress bar
-      const percent = 72; // example value; replace with real user data
-      document.getElementById('progress-bar').style.width = percent + '%';
-      document.getElementById('profile-percent').textContent = percent + '%';
+      // wire up job search/filter
+      jobSearch = document.getElementById('job-search');
+      jobFilter = document.getElementById('job-filter');
+
+      if (jobSearch) jobSearch.addEventListener('input', filterJobs);
+      if (jobFilter) jobFilter.addEventListener('change', filterJobs);
     });
 
     // show chosen file name
-  // update file name on choose
-  document.getElementById("resume").addEventListener("change", function(){
-    const fileName = this.files[0] ? this.files[0].name : "No file chosen";
-    document.getElementById("file-name").textContent = fileName;
-  });
+    const resumeInput = document.getElementById("resume");
+    if (resumeInput) {
+      resumeInput.addEventListener("change", function(){
+        const fileName = this.files[0] ? this.files[0].name : "No file chosen";
+        const fileNameEl = document.getElementById("file-name");
+        if (fileNameEl) fileNameEl.textContent = fileName;
+      });
+    }
 
     // search & filter functionality (client-side)
-    const jobSearch = document.getElementById('job-search');
-    const jobFilter = document.getElementById('job-filter');
-    jobSearch.addEventListener('input', filterJobs);
-    jobFilter.addEventListener('change', filterJobs);
-
+    let jobSearch;
+    let jobFilter;
     function filterJobs(){
+      if (!jobSearch || !jobFilter) return;
       const q = jobSearch.value.trim().toLowerCase();
       const loc = jobFilter.value;
+      const filterValue = loc.toLowerCase();
       document.querySelectorAll('.job-card').forEach(card => {
-        const title = card.getAttribute('data-title').toLowerCase();
-        const location = card.getAttribute('data-location').toLowerCase();
+        const title = (card.getAttribute('data-title') || '').toLowerCase();
+        const location = (card.getAttribute('data-location') || '').toLowerCase();
+
         const matchesQuery = !q || title.includes(q) || card.textContent.toLowerCase().includes(q);
-        const matchesLoc = loc === 'all' || location === loc;
+        const matchesLoc = loc === 'all' || location.includes(filterValue);
+
         card.style.display = (matchesQuery && matchesLoc) ? 'flex' : 'none';
       });
     }
 
-    // apply job (demo) — show toast and add to history table
-    function applyJob(title, company){
-      // toast
-      const toast = document.createElement('div');
-      toast.className = 'card';
-      toast.style.position='fixed';
-      toast.style.right='24px';
-      toast.style.bottom='90px';
-      toast.style.padding='12px 16px';
-      toast.style.zIndex=3000;
-      toast.style.borderRadius='10px';
-      toast.style.boxShadow='0 8px 28px rgba(9,30,66,0.12)';
-      toast.innerHTML = `<strong>Application submitted</strong><div style="color:var(--muted);font-size:13px">${title} • ${company}</div>`;
-      document.body.appendChild(toast);
-      setTimeout(()=> toast.style.opacity=0,2200);
-      setTimeout(()=> toast.remove(),2600);
+    // Note: applyJob function removed - applications are now submitted via form POST to backend
+    // The backend route /apply-job/<job_id> handles the application and redirects back to dashboard
+    // Job History will be automatically updated from the backend data
 
-      // append to job history (demo row)
-      const tbody = document.getElementById('history-body');
-      const row = document.createElement('tr');
-      const today = new Date().toISOString().split('T')[0];
-      row.innerHTML = `<td>${title}</td><td>${company}</td><td>${today}</td><td><span class="status-pill status-applied">Applied</span></td>`;
-      tbody.prepend(row); 
-    }
-
-    // submit resume form demo
+    // submit resume form - submits to backend via POST
     function submitApplication(e){
-      e.preventDefault();
-      const name = document.getElementById('fullname').value || 'Applicant';
-      applyJob(document.getElementById('jobtitle').value || 'Target Role', '—');
-      // update profile name/avatar initials
-      document.getElementById('display-name').textContent = name;
-      const initials = name.split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
-      document.getElementById('avatar-text').textContent = initials;
-      // reset form except leave file name
-      e.target.reset();
-      document.getElementById('file-name').textContent = 'No file chosen';
+      // Form will submit normally to backend route /upload-resume
+      // Backend handles the file upload and profile update
+      // No need to prevent default - let the form submit naturally
     }
 
-function editProfile() {
-  const form = document.getElementById('edit-profile-form');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
-}
+    function saveProfile() {
+      const name = document.getElementById('edit-fullname').value;
+      const jobtitle = document.getElementById('edit-jobtitle').value;
 
-function saveProfile() {
-  const name = document.getElementById('edit-fullname').value;
-  const jobtitle = document.getElementById('edit-jobtitle').value;
+      const displayName = document.getElementById('display-name');
+      const roleEl = document.querySelector('#profile .role');
+      const avatarEl = document.getElementById('avatar-text');
 
-  document.getElementById('display-name').textContent = name;
-  document.querySelector('#profile .role').textContent = jobtitle || 'Looking for opportunities';
+      if (displayName) displayName.textContent = name;
+      if (roleEl) roleEl.textContent = jobtitle || 'Looking for opportunities';
+      if (avatarEl) {
+        const initials = name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase();
+        avatarEl.textContent = initials;
+      }
 
-  const initials = name.split(' ').map(n => n[0]).slice(0,2).join('').toUpperCase();
-  document.getElementById('avatar-text').textContent = initials;
+      const form = document.getElementById('edit-profile-form');
+      if (form) form.style.display = 'none';
 
-  document.getElementById('edit-profile-form').style.display = 'none';
-
-  // Optional toast
-  alert('Profile updated successfully!');
-}
-    function openResume(){
-      window.open('/uploads/resume.pdf','_blank');
+      alert('Profile updated successfully!');
     }
-  </script>
+
+    // Toast Notification Function
+    function showToast(message, type = 'default', duration = 3000) {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+
+        setTimeout(() => toast.classList.add('show'), 10);
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => container.removeChild(toast), 400);
+        }, duration);
+    }
+</script>
 </body>
 </html>
